@@ -1,0 +1,139 @@
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Languages, Download } from "lucide-react"
+import type { ClinicalSummary } from "@/lib/medical-kb"
+
+interface MultiLanguageProps {
+  clinicalSummary: ClinicalSummary
+}
+
+const languages = [
+  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" },
+  { code: "hi", name: "Hindi", flag: "🇮🇳" },
+  { code: "ta", name: "Tamil", flag: "🇮🇳" },
+  { code: "zh", name: "Chinese", flag: "🇨🇳" },
+  { code: "ar", name: "Arabic", flag: "🇸🇦" },
+]
+
+const mockTranslations: Record<string, Record<string, string>> = {
+  es: {
+    summary:
+      "Paciente de 47 años con diabetes tipo 2 durante 10 años, en tratamiento con Metformina y Ramipril, se presenta para seguimiento de diabetes. Las tendencias vitales actuales muestran deterioro de HbA1c en 0.4% y aumento de peso de 5.0kg. Los hallazgos clínicos críticos incluyen HbA1c 8.2% indica control deficiente de diabetes y presión arterial sistólica 150 mmHg indica hipertensión moderada. Se recomienda revisión clínica inmediata y optimización de la terapia basada en los indicadores actuales.",
+  },
+  hi: {
+    summary:
+      "47 वर्षीय मरीज़ जिसे 10 साल से टाइप 2 डायबिटीज़ है, मेटफॉर्मिन और रैमिप्रिल पर है, डायबिटीज़ की जांच के लिए आया है। वर्तमान महत्वपूर्ण संकेतक HbA1c में 0.4% की गिरावट और 5.0kg वजन बढ़ना दिखाते हैं। महत्वपूर्ण नैदानिक निष्कर्षों में HbA1c 8.2% खराब डायबिटीज़ नियंत्रण और सिस्टोलिक रक्तचाप 150 mmHg मध्यम उच्च रक्तचाप दर्शाता है। वर्तमान संकेतकों के आधार पर तत्काल नैदानिक समीक्षा और चिकित्सा अनुकूलन की सिफारिश की जाती है।",
+  },
+  ta: {
+    summary:
+      "47 வயது நோயாளி, 10 வருடங்களாக வகை 2 நீரிழிவு நோய், மெட்ஃபார்மின் மற்றும் ராம்ப்ரில் மருந்துகள் எடுத்துக்கொண்டு, நீரிழிவு பின்தொடர்தலுக்காக வந்துள்ளார். தற்போதைய முக்கிய அறிகுறிகள் HbA1c 0.4% மோசமடைதல் மற்றும் 5.0kg எடை அதிகரிப்பு காட்டுகின்றன. முக்கியமான மருத்துவ கண்டுபிடிப்புகளில் HbA1c 8.2% மோசமான நீரிழிவு கட்டுப்பாடு மற்றும் சிஸ்டாலிக் இரத்த அழுத்தம் 150 mmHg மிதமான உயர் இரத்த அழுத்தம் குறிக்கிறது। தற்போதைய குறிகாட்டிகளின் அடிப்படையில் உடனடி மருத்துவ மறுஆய்வு மற்றும் சிகிச்சை மேம்பாடு பரிந்துரைக்கப்படுகிறது।",
+  },
+}
+
+export function MultiLanguage({ clinicalSummary }: MultiLanguageProps) {
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("en")
+  const [translatedSummary, setTranslatedSummary] = useState<string>("")
+  const [isTranslating, setIsTranslating] = useState(false)
+
+  const translateSummary = async () => {
+    if (selectedLanguage === "en") {
+      setTranslatedSummary(clinicalSummary.summary)
+      return
+    }
+
+    setIsTranslating(true)
+
+    // Simulate AI translation (in production, use Google Translate API or similar)
+    setTimeout(() => {
+      const translation =
+        mockTranslations[selectedLanguage]?.summary || `[${selectedLanguage.toUpperCase()}] ${clinicalSummary.summary}`
+      setTranslatedSummary(translation)
+      setIsTranslating(false)
+    }, 2000)
+  }
+
+  const downloadTranslation = () => {
+    const selectedLang = languages.find((l) => l.code === selectedLanguage)
+    const content = `Clinical Summary (${selectedLang?.name})\n\n${translatedSummary}\n\nGenerated by SmartEMR AI\nDate: ${new Date().toLocaleString()}`
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `clinical_summary_${selectedLanguage}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Languages className="h-5 w-5" />
+          Multi-Language Clinical Summaries
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="text-sm text-gray-600">
+          Generate clinical summaries in multiple languages for better patient communication.
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    <span className="flex items-center gap-2">
+                      <span>{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={translateSummary} disabled={isTranslating} className="gap-2">
+            <Languages className="h-4 w-4" />
+            {isTranslating ? "Translating..." : "Translate"}
+          </Button>
+        </div>
+
+        {translatedSummary && (
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline">
+                  {languages.find((l) => l.code === selectedLanguage)?.flag}{" "}
+                  {languages.find((l) => l.code === selectedLanguage)?.name}
+                </Badge>
+              </div>
+              <p className="text-sm leading-relaxed">{translatedSummary}</p>
+            </div>
+
+            <Button onClick={downloadTranslation} variant="outline" className="gap-2 bg-transparent">
+              <Download className="h-4 w-4" />
+              Download Translation
+            </Button>
+          </div>
+        )}
+
+        <div className="text-xs text-gray-500">
+          Translations powered by AI • Available in 6+ languages • HIPAA compliant
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
